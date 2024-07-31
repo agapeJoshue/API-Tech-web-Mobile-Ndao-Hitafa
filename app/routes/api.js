@@ -2,4 +2,5 @@
 module.exports = (app , io) => {
     require('./groups/auth.route')(app , io)
     require('./groups/users.route')(app , io)
+    require('./groups/chats.toute')(app , io)
 };
