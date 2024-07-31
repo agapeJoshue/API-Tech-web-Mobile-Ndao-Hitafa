@@ -1,0 +1,12 @@
+module.exports = (app, io) => {
+    const usersController = require("../../controllers/userController");
+    var routes = require("express").Router();
+
+    routes.get("/contactes/:user_id", usersController.friends);
+    routes.get("/suggestion-amis/:user_id", usersController.listsUsers);
+    routes.get("/lists-invitations-friend/:user_id", usersController.listsDemande);
+    routes.post("/add-new-friend/:sent_by/:received_by", usersController.addNewFriend);
+    routes.put("/accept-a-invitation/:received_by/:invitation_id", usersController.acceptAInvitation);
+
+    app.use("/api/users", routes);
+};

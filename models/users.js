@@ -28,7 +28,12 @@ module.exports = (sequelize, DataTypes) => {
     reset_password_token: {
       type: DataTypes.STRING,
       allowNull: true
-    }
+    },
+    status: {
+      type: DataTypes.INTEGER,
+      allowNull: true,
+      defaultValue: false
+    },
   }, {
     sequelize,
     modelName: 'Users',

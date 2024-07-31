@@ -130,10 +130,9 @@ exports.getAllInvitations = async (condition) => {
             const data = {
                 id: invitation.id,
                 user_id: user.id,
-                username: user.username,
+                username: user.nom,
                 email: user.email,
-                profile_url: user.profil_url,
-                validated: user.is_validate == 1 ? true : false,
+                profile_url: user.profile_url,
                 is_accepted: invitation.is_accepted == 1 ? true : false
             }
             invitations_lists.push(data);
@@ -208,15 +207,17 @@ exports.getAllNoFriends = async (userId) => {
 
         if (users) {
             for (const user of users) {
+                const ifManyInvitation = await Invite.findOne({ where: { sent_by: user.id, received_by: userId } });
                 const data = {
                     user_id: user.id,
-                    username: user.username,
+                    username: user.nom,
                     email: user.email,
-                    profile_url: user.profil_url,
-                    validated: user.is_validate == 1 ? true : false,
-                    active: user.is_validate == 1 ? true : false
+                    profile_url: user.profile_url,
+                    status: user.status
                 }
-                nonFriends.push(data);
+                if(!ifManyInvitation){
+                    nonFriends.push(data);
+                }
             }
         }
 
@@ -309,11 +310,10 @@ exports.getAllFriend = async (user_id, condition) => {
                 if (user) {
                     const data = {
                         user_id: user.id,
-                        username: user.username,
+                        username: user.nom,
                         email: user.email,
-                        profile_url: user.profil_url,
-                        validated: user.is_validate == 1 ? true : false,
-                        active: user.is_validate == 1 ? true : false
+                        profile_url: user.profile_url,
+                        status: user.status
                     }
                     friends_lists.push(data);
                 }

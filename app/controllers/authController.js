@@ -6,20 +6,6 @@ const config = require("../config/config.auth");
 const { successResponse, errorResponse, } = require("../services/response.service");
 const { create_user, update_user, find_on_user } = require("../services/users.service");
 
-/**
- * Get all user 
- * @param {*} req
- * @param {*} res
- */
-exports.getAllUsers = async (req, res) => {
-    try {
-        const UserLists = await Users.findAll();
-        res.status(200).send(successResponse(UserLists));
-    } catch (err) {
-        res.status(500).send(errorResponse(err));
-    }
-};
-
 
 /**
  * Identification de l'utilisateur
