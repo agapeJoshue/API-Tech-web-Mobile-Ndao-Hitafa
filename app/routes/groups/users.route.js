@@ -3,6 +3,7 @@ module.exports = (app, io) => {
     var routes = require("express").Router();
 
     routes.get("/contactes/:user_id", usersController.friends);
+    routes.get("/contactes2/:user_id", usersController.friends2);
     routes.get("/suggestion-amis/:user_id", usersController.listsUsers);
     routes.get("/lists-invitations-friend/:user_id", usersController.listsDemande);
     routes.post("/add-new-friend/:sent_by/:received_by", usersController.addNewFriend);

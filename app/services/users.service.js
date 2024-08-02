@@ -372,6 +372,42 @@ exports.getAllFriend = async (user_id, condition) => {
 }
 
 /**
+ * Get all friend
+ * @param {number} user_id - The ID of the user
+ * @param {object} condition - The condition for finding friends
+ */
+exports.getAllFriend2 = async (user_id, condition) => {
+    try {
+        const friends_lists = [];
+        const friends = await Friends.findAll(condition);
+        if (friends) {
+            for (const friend of friends) {
+                let user;
+                if (user_id == friend.user_id1) {
+                    user = await Users.findOne({ where: { id: friend.user_id2 } });
+                } else {
+                    user = await Users.findOne({ where: { id: friend.user_id1 } });
+                }
+
+                if (user) {
+                    const data = {
+                        user_id: user.id,
+                        username: user.nom,
+                        email: user.email,
+                        profile_url: user.profile_url,
+                        status: user.status
+                    }
+                    friends_lists.push(data);
+                }
+            }
+        }
+        return friends_lists;
+    } catch (err) {
+        throw new Error(err.message)
+    }
+}
+
+/**
  * Search friend
  * @param {number} user_id - The ID of the user
  * @param {object} condition - The condition for finding friends

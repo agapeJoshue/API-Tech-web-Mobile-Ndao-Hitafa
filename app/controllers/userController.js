@@ -1,6 +1,12 @@
 const Sequelize = require('sequelize');
 const { successResponse, errorResponse, } = require("../services/response.service");
-const { getAllFriend, getAllNoFriends, getAllInvitations, addFriend, annulerDemande, acceptInvitation, annulerInvitation } = require("../services/users.service");
+const { getAllFriend,
+    getAllFriend2, getAllNoFriends,
+    getAllInvitations, addFriend, annulerDemande,
+    acceptInvitation, annulerInvitation
+} = require("../services/users.service");
+
+const { verifyUserHasDiscu } = require('../services/chat.service');
 
 /**
  * Get all user 
@@ -28,6 +34,40 @@ exports.friends = async (req, res) => {
         const condition = { where: { [Sequelize.Op.or]: [{ user_id1: user_id }, { user_id2: user_id }] } };
         const friends = await getAllFriend(user_id, condition);
         return res.status(200).send(friends);
+    } catch (err) {
+        return res.status(500).send(errorResponse({ message: err.message }));
+    }
+}
+
+
+/**
+ * Listes des contacts / amis
+ * @param {*} req
+ * @param {*} res
+ */
+exports.friends2 = async (req, res) => {
+    try {
+        const { user_id } = req.params;
+        const condition = { where: { [Sequelize.Op.or]: [{ user_id1: user_id }, { user_id2: user_id }] } };
+        const friends = await getAllFriend2(user_id, condition);
+        if (!friends) {
+            return res.send(friends);
+        }
+        let responses = [];
+        for (const friend of friends) {
+            const response = await verifyUserHasDiscu(user_id, friend.user_id);
+            const data = {
+                user_id: friend.user_id,
+                username: friend.username,
+                email: friend.email,
+                profile_url: friend.profile_url,
+                status: friend.status,
+                channelUUID: response ? response :  "initialMessage"
+            }
+            responses.push(data);
+        }
+
+        return res.status(200).send(responses);
     } catch (err) {
         return res.status(500).send(errorResponse({ message: err.message }));
     }
@@ -93,7 +133,7 @@ exports.addNewFriend = async (req, res) => {
 exports.cancelDemande = async (req, res) => {
     try {
         const { sent_by, received_by } = req.params;
-        const condition = {where : { sent_by, received_by }};
+        const condition = { where: { sent_by, received_by } };
         const response = await annulerDemande(condition);
         return res.send({ message: "Demande envoyé" });
     } catch (err) {

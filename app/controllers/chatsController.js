@@ -8,7 +8,7 @@ const {
 
 const {
     newDiscussion,
-    sendMessage,
+    sendNewMessage,
     getMessageUser,
     getDiscussionUser,
     createParticipes,
@@ -23,41 +23,45 @@ const {
  */
 exports.initMessage = (io) => async (req, res) => {
     try {
-        const { user_id, recipient_id, message } = req.body;
-        const condition = { where: { id: user_id } }
+        const { sender, receivedBy, content } = req.body;
+        const condition = { where: { id: sender } }
+
         const userInfo = await find_on_user(condition);
         if (!userInfo) {
             return res.send(errorResponse({ message: "L'utilisateur n'existe pas." }));
         }
 
         const dataUser = {
-            user_id,
+            sender,
             username: userInfo.nom,
             email: userInfo.email,
             profile_url: userInfo.profile_url,
         }
 
+        console.log(dataUser);
+
         const channel = await newDiscussion({ channel_uuid: uuid.v4(), title: "private message" });
-        const message_sended = await createParticipes(channel.channel_uuid, user_id, true);
-        const message_received = await createParticipes(channel.channel_uuid, recipient_id, false);
+        
+        await createParticipes(channel.channel_uuid, sender, true);
+        await createParticipes(channel.channel_uuid, receivedBy, false);
 
-
-        const newMessage = await sendMessage(channel.channel_uuid, user_id, message);
+        const newMessage = await sendNewMessage(channel.channel_uuid, sender, content);
+        console.log(newMessage)
+        
         const dataMessage = {
             channel_uuid: channel.channel_uuid,
-            user_sender_info: dataUser,
-            title: channel.title ? channel.title : "private message",
-            is_admin: true,
-            message: {
-                uuid: newMessage.uuid,
-                content: newMessage.content,
-                fullDate: newMessage.createdAt,
-                date: frDate(newMessage.createdAt),
-                time: frTime(newMessage.createdAt)
-            }
+            uuid: newMessage.uuid,
+            isMe: userInfo.id == user_id,
+            content: newMessage.content,
+            fullDate: newMessage.createdAt,
+            date: frDate(newMessage.createdAt),
+            heure: frTime(newMessage.createdAt),
+            is_read: newMessage.is_read == 1 ? true : false,
+            is_updated: newMessage.is_updated,
+            is_retired: newMessage.is_retired,
         }
 
-        io.emit('receive_message_user_' + recipient_id, dataMessage);
+        io.emit('receive_message_user_' + receivedBy, dataMessage);
         return res.status(200).send(dataMessage);
     } catch (error) {
         return res.status(500).send(errorResponse(error));

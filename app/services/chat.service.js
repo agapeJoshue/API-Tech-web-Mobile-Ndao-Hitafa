@@ -15,7 +15,7 @@ exports.newDiscussion = async (option) => {
     }
 }
 
-exports.sendMessage = async (channel_uuid, user_id, content) => {
+exports.sendNewMessage = async (channel_uuid, user_id, content) => {
     try {
         return await userMessages.create({ channel_uuid, user_id, content });
     } catch (err) {
@@ -141,9 +141,28 @@ exports.createParticipes = async (channel_uuid, user_id, is_admin) => {
 }
 
 exports.newMessage = async (option) => {
-    try{
+    try {
         return await userMessages.create(option);
-    }catch(err){
+    } catch (err) {
+        throw new Error(err.message);
+    }
+}
+
+exports.verifyUserHasDiscu = async (userId, frienId) => {
+    try {
+        const participe = await userAssociated.findAll({ where: { user_id: frienId } });
+        if (participe) {
+            for (const partic of participe) {
+                const checkChannelUUID = await Messages.findOne({ where: { channel_uuid: partic.channel_uuid } });
+                const checkUserInfo = await userAssociated.findOne({
+                    where: { channel_uuid: checkChannelUUID.channel_uuid, user_id: userId }
+                });
+                if(checkUserInfo){
+                    return checkChannelUUID.channel_uuid
+                }
+            }
+        }
+    } catch (err) {
         throw new Error(err.message);
     }
 }
