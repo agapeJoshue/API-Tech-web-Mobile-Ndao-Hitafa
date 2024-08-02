@@ -9,11 +9,11 @@ module.exports = (sequelize, DataTypes) => {
      * The `models/index` file will call this method automatically.
      */
     static associate(models) {
-      Message.hasMany(models.users_messages, {
+      /* messages.hasMany(models.users_messages, {
         foreignKey: "channel_uuid",
         sourceKey: "channel_uuid",
         as: "userMessages",
-      });
+      }); */
     }
   }
   messages.init({

@@ -114,6 +114,18 @@ exports.addFriend = async (invitation) => {
 }
 
 /**
+ * Add a new Friends
+ * @param {object} invitation - The invitation option for create invitation
+ */
+exports.annulerDemande = async (condition) => {
+    try {
+        return await Invite.destroy(condition);
+    } catch (err) {
+        throw new Error(err.message)
+    }
+}
+
+/**
  * Lists of demand
  * @param {object} condition - The condition for finding invitation
  */
@@ -170,11 +182,32 @@ exports.acceptInvitation = async (id, received_by) => {
 }
 
 /**
+ * Add a new Friends
+ * @param {number} id - The ID of the user
+ * @param {number} received_by - The ID of the user connected
+ */
+exports.annulerInvitation = async (id, received_by) => {
+    try {
+        const invitation = await Invite.findOne({ where: { id, received_by } });
+        if (!invitation) {
+            return false
+        }
+
+        await Friends.destroy({ where: { id } });
+
+        return true;
+    } catch (err) {
+        throw new Error(err.message)
+    }
+}
+
+/**
  * Get all user no friend
  * @param {number} userId - The ID of the user
  */
 exports.getAllNoFriends = async (userId) => {
     try {
+        // Récupération des amis pour userId
         const friends1 = await Friends.findAll({
             attributes: ['user_id2'],
             where: {
@@ -191,41 +224,54 @@ exports.getAllNoFriends = async (userId) => {
             raw: true
         });
 
+        // Création d'un tableau d'IDs d'amis
         const friendIdsArray = [
             ...friends1.map(friend => friend.user_id2),
             ...friends2.map(friend => friend.user_id1)
         ];
-        const nonFriends = [];
+
+        // Récupération des utilisateurs qui ne sont pas amis
         const users = await Users.findAll({
             where: {
                 id: {
-                    [sequelize.Op.notIn]: friendIdsArray,
-                    [sequelize.Op.ne]: userId
+                    [sequelize.Op.notIn]: [...friendIdsArray, userId]
                 }
             }
         });
 
-        if (users) {
-            for (const user of users) {
-                const ifManyInvitation = await Invite.findOne({ where: { sent_by: user.id, received_by: userId } });
-                const data = {
-                    user_id: user.id,
-                    username: user.nom,
-                    email: user.email,
-                    profile_url: user.profile_url,
-                    status: user.status
-                }
-                if(!ifManyInvitation){
-                    nonFriends.push(data);
-                }
+        const nonFriends = [];
+
+        for (const user of users) {
+            const ifManyInvitation = await Invite.findOne({
+                where: { sent_by: user.id, received_by: userId }
+            });
+
+            const ifManySendByMe = await Invite.findOne({
+                where: { sent_by: userId, received_by: user.id }
+            });
+
+            console.log(ifManySendByMe)
+
+            const data = {
+                user_id: user.id,
+                username: user.nom,
+                email: user.email,
+                profile_url: user.profile_url,
+                status: user.status,
+                invitationAlreadyExist: !!ifManySendByMe
+            };
+
+            if (!ifManyInvitation) {
+                nonFriends.push(data);
             }
         }
 
-        return nonFriends
+        return nonFriends;
     } catch (err) {
         throw new Error(err.message);
     }
-}
+};
+
 
 /**
  * Get all users who are not friends

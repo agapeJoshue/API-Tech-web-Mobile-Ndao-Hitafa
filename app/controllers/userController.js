@@ -1,6 +1,6 @@
 const Sequelize = require('sequelize');
 const { successResponse, errorResponse, } = require("../services/response.service");
-const { getAllFriend, getAllNoFriends, getAllInvitations, addFriend, acceptInvitation } = require("../services/users.service");
+const { getAllFriend, getAllNoFriends, getAllInvitations, addFriend, annulerDemande, acceptInvitation, annulerInvitation } = require("../services/users.service");
 
 /**
  * Get all user 
@@ -86,6 +86,23 @@ exports.addNewFriend = async (req, res) => {
 
 
 /**
+ * Ajouter un ami / envoyé un demande d'etre ami
+ * @param {*} req
+ * @param {*} res
+ */
+exports.cancelDemande = async (req, res) => {
+    try {
+        const { sent_by, received_by } = req.params;
+        const condition = {where : { sent_by, received_by }};
+        const response = await annulerDemande(condition);
+        return res.send({ message: "Demande envoyé" });
+    } catch (err) {
+        return res.status(500).send({ message: err.message })
+    }
+}
+
+
+/**
  * Ajouter un ami / accepter un demande de devenir ami
  * @param {*} req
  * @param {*} res
@@ -99,10 +116,29 @@ exports.acceptAInvitation = async (req, res) => {
             return res.send(errorResponse({ message: "Invitation n'est plus disponible" }));
         }
 
-        return res.status(200).send({ message: "Demande envoyé" });
+        return res.status(200).send({ message: "Demande accepté" });
     } catch (err) {
         return res.status(500).send(errorResponse({ message: err.message }));
     }
 }
 
 
+/**
+ * Ajouter un ami / accepter un demande de devenir ami
+ * @param {*} req
+ * @param {*} res
+ */
+exports.cancelInvitation = async (req, res) => {
+    try {
+        const { received_by, invitation_id } = req.params;
+        const response = await annulerInvitation(invitation_id, received_by);
+
+        if (!response) {
+            return res.send({ message: "Invitation n'est plus disponible" });
+        }
+
+        return res.status(200).send({ message: "Demande annuler" });
+    } catch (err) {
+        return res.status(500).send(errorResponse({ message: err.message }));
+    }
+}

@@ -10,6 +10,9 @@ const {
     newDiscussion,
     sendMessage,
     getMessageUser,
+    getDiscussionUser,
+    createParticipes,
+    newMessage
 } = require("../services/chat.service");
 
 
@@ -34,7 +37,10 @@ exports.initMessage = (io) => async (req, res) => {
             profile_url: userInfo.profile_url,
         }
 
-        const channel = await newDiscussion({ channel_uuid: uuid.v4(), user: user_id, user_id: recipient_id , title: "private message"});
+        const channel = await newDiscussion({ channel_uuid: uuid.v4(), title: "private message" });
+        const message_sended = await createParticipes(channel.channel_uuid, user_id, true);
+        const message_received = await createParticipes(channel.channel_uuid, recipient_id, false);
+
 
         const newMessage = await sendMessage(channel.channel_uuid, user_id, message);
         const dataMessage = {
@@ -66,12 +72,60 @@ exports.initMessage = (io) => async (req, res) => {
  */
 exports.messageLists = async (req, res) => {
     try {
-        const {user_id} = req.body;
+        const { user_id } = req.params;
         const response = await getMessageUser(user_id);
         if (!response) {
-            return res.send(successResponse({ message: "Vous n'avez pas encore des discussions en cour." }));
+            return res.send({ message: "Vous n'avez pas encore des discussions en cour." });
         }
-        return res.send(successResponse(response));
+        return res.send(response);
+    } catch (err) {
+        return res.status(500).send(errorResponse({ message: err.message }));
+    }
+}
+
+
+/**
+ * Listes des discussions dans un channel
+ * @param {*} req
+ * @param {*} res
+ */
+exports.getDiscussionLists = async (req, res) => {
+    try {
+        const { channel_uuid, user_id } = req.params;
+
+        const response = await getDiscussionUser(channel_uuid, user_id);
+        return res.status(200).send(response);
+    } catch (err) {
+        return res.status(500).send(errorResponse({ message: err.message }));
+    }
+}
+
+
+exports.nouveauMessage =  (io) =>async (req, res) => {
+    try {
+        const { channelUUID, content, sender, receivedBy } = req.body;
+
+        const message = {
+            user_id: sender,
+            channel_uuid: channelUUID,
+            content: content,
+        }
+        const response = await newMessage(message);
+        
+        const discussionInfo = {
+            uuid: response.uuid,
+            isMe: false,
+            content: response.content,
+            fullDate: response.createdAt,
+            date: frDate(response.createdAt),
+            heure: frTime(response.createdAt),
+            is_read: response.is_read == 1 ? true : false,
+            is_updated: response.is_updated,
+            is_retired: response.is_retired,
+        }
+
+        io.emit(`messageReceived_${receivedBy}`, discussionInfo);
+        return res.status(200).send(response);
     } catch (err) {
         return res.status(500).send(errorResponse({ message: err.message }));
     }
