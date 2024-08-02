@@ -1,10 +1,13 @@
 const Sequelize = require('sequelize');
 const { successResponse, errorResponse, } = require("../services/response.service");
-const { getAllFriend,
+const { getAllFriend, find_on_user,
     getAllFriend2, getAllNoFriends,
     getAllInvitations, addFriend, annulerDemande,
-    acceptInvitation, annulerInvitation
+    acceptInvitation, annulerInvitation, update_user,destroy_user
 } = require("../services/users.service");
+
+const bcrypt = require("bcrypt");
+const config = require("../config/config.auth");
 
 const { verifyUserHasDiscu } = require('../services/chat.service');
 
@@ -62,7 +65,7 @@ exports.friends2 = async (req, res) => {
                 email: friend.email,
                 profile_url: friend.profile_url,
                 status: friend.status,
-                channelUUID: response ? response :  "initialMessage"
+                channelUUID: response ? response : "initialMessage"
             }
             responses.push(data);
         }
@@ -182,3 +185,123 @@ exports.cancelInvitation = async (req, res) => {
         return res.status(500).send(errorResponse({ message: err.message }));
     }
 }
+
+
+/**
+ * Suppression compte utilisateur
+ * @param {*} req
+ * @param {*} res
+ */
+exports.deleteAccount = async (req, res) => {
+    try {
+        const { user_id } = req.params;
+        const response = await destroy_user(user_id);
+
+        return res.status(200).send({ message: "Votre compte a été supprimer" });
+    } catch (err) {
+        return res.status(500).send(errorResponse({ message: err.message }));
+    }
+}
+
+
+/**
+ * Suppression compte utilisateur
+ * @param {*} req
+ * @param {*} res
+ */
+exports.updateUsername = async (req, res) => {
+    try {
+        const { user_id } = req.params;
+        const { username, password } = req.body;
+        const condition = { where: { id: user_id } };
+
+        const user = await find_on_user(condition);
+        if (!user) {
+            return res.send(errorResponse({ message: "L'utilisateur n'a pas été trouvé ou n'existe pas." }));
+        }
+
+        const verify = await bcrypt.compare(password, user.password);
+        if (!verify) {
+            return res.status(200).send(errorResponse({ message: "Le mot de passe que vous avez saisi est incorrect." }));
+        }
+        const userData = {
+            nom: username
+        };
+        await update_user(userData, user_id);
+
+        return res.status(200).send({ message: "Votre nom a été modifier" });
+    } catch (err) {
+        return res.status(500).send(errorResponse({ message: err.message }));
+    }
+}
+
+
+/**
+ * Suppression compte utilisateur
+ * @param {*} req
+ * @param {*} res
+ */
+exports.updateEmail = async (req, res) => {
+    try {
+        const { user_id } = req.params;
+        const { email, password } = req.body;
+        const condition = { where: { id: user_id } };
+
+        const user = await find_on_user(condition);
+        if (!user) {
+            return res.send(errorResponse({ message: "L'utilisateur n'a pas été trouvé ou n'existe pas." }));
+        }
+
+        const verify = await bcrypt.compare(password, user.password);
+        if (!verify) {
+            return res.status(200).send(errorResponse({ message: "Le mot de passe que vous avez saisi est incorrect." }));
+        }
+        const userData = {
+            email
+        };
+        await update_user(userData, user_id);
+
+        return res.status(200).send({ message: "Votre email a été modifier" });
+    } catch (err) {
+        return res.status(500).send(errorResponse({ message: err.message }));
+    }
+}
+
+
+/**
+ * Suppression compte utilisateur
+ * @param {*} req
+ * @param {*} res
+ */
+exports.updatePassword = async (req, res) => {
+    try {
+        const { user_id } = req.params;
+        const { currentPassword, newPassword, confirmNewPassword } = req.body;
+        const condition = { where: { id: user_id } };
+
+        if (newPassword != confirmNewPassword) {
+            return res.send(errorResponse({ message: "New password do not match!" }));
+        }
+
+        const user = await find_on_user(condition);
+        if (!user) {
+            return res.send(errorResponse({ message: "L'utilisateur n'a pas été trouvé ou n'existe pas." }));
+        }
+
+        const verify = await bcrypt.compare(currentPassword, user.password);
+        if (!verify) {
+            return res.status(200).send(errorResponse({ message: "Le mot de passe que vous avez saisi est incorrect." }));
+        }
+
+        const userData = {
+            password: await bcrypt.hash(newPassword, 8),
+        };
+
+        await update_user(userData, user_id);
+
+        return res.status(200).send({ message: "Votre mot de passe a été modifier" });
+    } catch (err) {
+        return res.status(500).send(errorResponse({ message: err.message }));
+    }
+}
+
